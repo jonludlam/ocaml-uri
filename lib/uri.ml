@@ -249,18 +249,11 @@ module Query = struct
 
   let find q k = try Some (List.assoc k q) with Not_found -> None
 
-  (** Query element separator '&' *)
-  let qs_amp = Re_str.regexp_string "&"
-  (** Query value list constructor '=' *)
-  let qs_eq = Re_str.regexp_string "="
-  (** Query value list element separator ',' *)
-  let qs_cm = Re_str.regexp_string ","
-
   (* TODO: only make the query tuple parsing lazy and an additional
    * record in Url.t ?  *)
 
   let split_query qs =
-    let els = Re_str.split_delim qs_amp qs in
+    let els = Stringext.split qs ~on:'&' in
     (** Replace a + in a query string with a space in-place *)
     let plus_to_space s =
       for i = 0 to String.length s - 1 do
@@ -271,7 +264,7 @@ module Query = struct
     let rec loop acc = function
       | (k::v::_)::tl ->
         let n = plus_to_space k,
-          (match Re_str.split_delim qs_cm (plus_to_space v) with
+          (match Stringext.split (plus_to_space v) ~on:',' with
             | [] -> [""] | l -> l) in
         loop (n::acc) tl
       | [k]::tl ->
@@ -280,7 +273,7 @@ module Query = struct
       | []::tl -> loop (("", [])::acc) tl
       | [] -> acc
     in loop []
-    (List.rev_map (fun el -> Re_str.bounded_split_delim qs_eq el 2) els)
+    (List.rev_map (fun el -> Stringext.split ~on:'=' ~max:2 el) els)
 
   (* Make a query tuple list from a percent-encoded string *)
   let query_of_encoded qs =
@@ -524,8 +517,13 @@ let merge base rpath =
 let remove_dot_segments p =
   let ascend = function [] -> [] | s::"/"::t | s::t -> t in
   let p = Pct.uncast_decoded p in
-  let inp = List.map (function Re_str.Text s | Re_str.Delim s -> s)
-    (Re_str.full_split (Re_str.regexp "/") p) in
+  let rec insert = function 
+    | "" :: b :: ys -> "/" :: insert (b::ys) 
+    | a :: b :: ys -> a :: "/" :: insert (b::ys) 
+    | "" :: [] -> [] 
+    | a :: [] -> [a] 
+    | [] -> [] in
+  let inp = insert (Stringext.split ~on:'/' p) in
   let rec loop outp = function
     | ".."::"/"::r | "."::"/"::r -> loop outp r (* A *)
     | "/"::"."::"/"::r | "/"::"."::r -> loop outp ("/"::r) (* B *)

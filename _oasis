@@ -15,6 +15,7 @@ Flag allservices
 Library uri
   Path:       lib
   Modules:    Uri,Uri_re,Uri_IP
+  InternalModules: Stringext
   BuildDepends: re.posix,re.str
 
 Library services
