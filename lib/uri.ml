@@ -253,7 +253,7 @@ module Query = struct
    * record in Url.t ?  *)
 
   let split_query qs =
-    let els = Stringext.split qs ~on:'&' in
+    let els = Stringext_internal.split qs ~on:'&' in
     (** Replace a + in a query string with a space in-place *)
     let plus_to_space s =
       for i = 0 to String.length s - 1 do
@@ -264,7 +264,7 @@ module Query = struct
     let rec loop acc = function
       | (k::v::_)::tl ->
         let n = plus_to_space k,
-          (match Stringext.split (plus_to_space v) ~on:',' with
+          (match Stringext_internal.split (plus_to_space v) ~on:',' with
             | [] -> [""] | l -> l) in
         loop (n::acc) tl
       | [k]::tl ->
@@ -273,7 +273,7 @@ module Query = struct
       | []::tl -> loop (("", [])::acc) tl
       | [] -> acc
     in loop []
-    (List.rev_map (fun el -> Stringext.split ~on:'=' ~max:2 el) els)
+    (List.rev_map (fun el -> Stringext_internal.split ~on:'=' ~max:2 el) els)
 
   (* Make a query tuple list from a percent-encoded string *)
   let query_of_encoded qs =
@@ -523,7 +523,7 @@ let remove_dot_segments p =
     | "" :: [] -> [] 
     | a :: [] -> [a] 
     | [] -> [] in
-  let inp = insert (Stringext.split ~on:'/' p) in
+  let inp = insert (Stringext_internal.split ~on:'/' p) in
   let rec loop outp = function
     | ".."::"/"::r | "."::"/"::r -> loop outp r (* A *)
     | "/"::"."::"/"::r | "/"::"."::r -> loop outp ("/"::r) (* B *)
